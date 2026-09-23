@@ -1,8 +1,8 @@
 const VERSES = [
-  "שִׁמְע֤וּ אִיִּים֙ אֵלַ֔י וְהַקְשִׁ֥יבוּ לְאֻמִּ֖ים מֵרָח֑וֹק יְהֹוָה֙ מִבֶּ֣טֶן קְרָאָ֔נִי מִמְּעֵ֥י אִמִּ֖י הִזְכִּ֥יר שְׁמִֽי׃",
-  "וַיָּ֤שֶׂם פִּי֙ כְּחֶ֣רֶב חַדָּ֔ה בְּצֵ֥ל יָד֖וֹ הֶחְבִּיאָ֑נִי וַיְשִׂימֵ֙נִי֙ לְחֵ֣ץ בָּר֔וּר בְּאַשְׁפָּת֖וֹ הִסְתִּירָֽנִי׃",
-  "וַיֹּ֥אמֶר לִ֖י עַבְדִּי־אָ֑תָּה יִשְׂרָאֵ֕ל אֲשֶׁר־בְּךָ֖ אֶתְפָּאָֽר׃",
-  "וַאֲנִ֤י אָמַ֙רְתִּי֙ לְרִ֣יק יָגַ֔עְתִּי לְתֹ֥הוּ וְהֶ֖בֶל כֹּחִ֣י כִלֵּ֑יתִי אָכֵן֙ מִשְׁפָּטִ֣י אֶת־יְהֹוָ֔ה וּפְעֻלָּתִ֖י אֶת־אֱלֹהָֽי׃"
+  "וַתֹּ֥אמֶר צִיּ֖וֹן עֲזָבַ֣נִי יְהֹוָ֑ה וַאדֹנָ֖י שְׁכֵחָֽנִי׃",
+  "הֲתִשְׁכַּ֤ח אִשָּׁה֙ עוּלָ֔הּ מֵרַחֵ֖ם בֶּן־בִּטְנָ֑הּ גַּם־אֵ֣לֶּה תִשְׁכַּ֔חְנָה וְאָנֹכִ֖י לֹ֥א אֶשְׁכָּחֵֽךְ׃",
+  "הֵ֥ן עַל־כַּפַּ֖יִם חַקֹּתִ֑יךְ חוֹמֹתַ֥יִךְ נֶגְדִּ֖י תָּמִֽיד׃",
+  "מִהֲר֖וּ בָּנָ֑יִךְ מְהָֽרְסַ֥יִךְ וּמַחֲרִיבַ֖יִךְ מִמֵּ֥ךְ יֵצֵֽאוּ׃"
 ];
 
 const passage = document.querySelector('#passage');
@@ -19,9 +19,9 @@ const deleteButton = document.querySelector('#delete-recording-button');
 const SUPABASE_URL = 'https://fgomaujsdblpzxhnnqrg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_JOUqLZDnfGu_yCa6k6FVDQ_AYwpr72i';
 const SUPABASE_STORAGE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb21hdWpzZGJscHp4aG5ucXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNjM3MjYsImV4cCI6MjA5OTgzOTcyNn0.1iMPI_7F_8ioNVnuThxqAKfMfD7G4NbyXilXZEERScw';
-const GROUP_TABLE = 'vivienne_haftorah_isaiah_49_1_4_highlight_groups_v1';
-const RECORDING_TABLE = 'vivienne_haftorah_isaiah_49_1_4_group_recordings_v1';
-const RECORDING_BUCKET = 'vivienne-haftorah-isaiah-49-1-4-group-recordings-v1';
+const GROUP_TABLE = 'vivienne_haftorah_isaiah_49_14_17_highlight_groups_v1';
+const RECORDING_TABLE = 'vivienne_haftorah_isaiah_49_14_17_group_recordings_v1';
+const RECORDING_BUCKET = 'vivienne-haftorah-isaiah-49-14-17-group-recordings-v1';
 let groups = [];
 const recordings = new Map();
 let remoteReady = false;
@@ -38,7 +38,7 @@ let activeVersePlayback = null;
 let verseAudioContext = null;
 let rerecordMode = false;
 
-function wordsFor(verse) { return VERSES[verse - 1].split(/\s+/); }
+function wordsFor(verse) { return VERSES[verse - 14].split(/\s+/); }
 function phraseFor(group) { return wordsFor(group.verse).slice(group.start, group.end + 1).join(' '); }
 function displayText(text) { return showTrope ? text : text.replace(/[\u0591-\u05AF]/g, ''); }
 function groupAt(verse, word) { return groups.find(group => group.verse === verse && word >= group.start && word <= group.end); }
@@ -46,7 +46,7 @@ function apiHeaders(extra = {}) { return { apikey: SUPABASE_KEY, 'Content-Type':
 function recordingUrl(recording) { return `${SUPABASE_URL}/storage/v1/object/public/${RECORDING_BUCKET}/${recording.object_path}?v=${encodeURIComponent(recording.updated_at || recording.byte_size)}`; }
 function recordingExtension(mimeType) { if (mimeType.includes('ogg')) return 'ogg'; if (mimeType.includes('mp4')) return 'mp4'; return 'webm'; }
 function preferredRecordingType() { const types = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4']; return types.find(type => MediaRecorder.isTypeSupported(type)) || ''; }
-function missingRecordingGroups() { return groups.filter(group => group.verse >= 1 && group.verse <= 4 && !recordings.has(group.id)); }
+function missingRecordingGroups() { return groups.filter(group => group.verse >= 14 && group.verse <= 17 && !recordings.has(group.id)); }
 function updateRecordingRepairControl() {
   const missing = missingRecordingGroups();
   recordMissingButton.hidden = !missing.length;
@@ -82,7 +82,7 @@ async function uploadRecording(groupId, blob) {
 async function loadRemoteState() {
   try {
     const [groupResponse, recordingResponse] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/${GROUP_TABLE}?verse=gte.1&verse=lte.4&select=id,verse,start_word,end_word,color&order=id.asc`, { headers: apiHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/${GROUP_TABLE}?verse=gte.14&verse=lte.17&select=id,verse,start_word,end_word,color&order=id.asc`, { headers: apiHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/${RECORDING_TABLE}?select=highlight_group_id,object_path,mime_type,byte_size,updated_at`, { headers: apiHeaders() })
     ]);
     if (!groupResponse.ok || !recordingResponse.ok) throw new Error('Supabase load failed');
@@ -98,7 +98,7 @@ async function loadRemoteState() {
 function render() {
   passage.replaceChildren();
   VERSES.forEach((text, offset) => {
-    const verse = offset + 1;
+    const verse = offset + 14;
     const row = document.createElement('div'); row.className = 'verse-row'; row.dir = 'rtl';
     const number = document.createElement('button'); number.className = 'verse-number'; number.type = 'button'; number.textContent = verse; number.dataset.verse = verse; number.setAttribute('aria-label', `Play verse ${verse} phrase recordings`);
     const line = document.createElement('span'); line.className = 'verse-line'; line.lang = 'he'; line.dataset.verse = verse;
