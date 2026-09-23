@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;600;700&display=swap');
+
+:root { color-scheme: light; --ink:#263026; --muted:#766f60; --paper:#fffdf7; --gold:#b78535; --green:#365a47; }
+* { box-sizing: border-box; }
+body { margin:0; min-height:100vh; overflow-x:hidden; color:var(--ink); background:radial-gradient(circle at 12% 16%,rgba(183,133,53,.12),transparent 24rem),linear-gradient(135deg,#eee1c6,#faf6eb 48%,#e8ddc6); font-family:Georgia,serif; }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.15; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E"); }
+.page { width:min(980px,calc(100% - 32px)); margin:auto; padding:72px 0 56px; text-align:center; }
+.page-header { position:sticky; z-index:20; top:0; margin:-72px calc(50% - 50vw) 18px; padding:54px max(16px,calc((100vw - 980px)/2)) 0; background:rgba(247,239,221,.96); box-shadow:0 8px 20px rgba(72,57,31,.08); backdrop-filter:blur(8px); }
+.eyebrow { margin:0 0 10px; color:var(--gold); font:700 .78rem/1.2 Arial,sans-serif; letter-spacing:.22em; }
+h1 { margin:0 0 18px; font-size:clamp(1.35rem,3vw,2rem); font-weight:400; }
+.display-controls { display:flex; justify-content:flex-end; gap:10px; padding-bottom:18px; }
+.display-controls-spacer { flex:1; }
+.audio-toggle { display:inline-flex; align-items:center; gap:9px; cursor:pointer; font:600 .8rem/1 Arial,sans-serif; }
+.audio-toggle input { position:absolute; width:1px; height:1px; opacity:0; }
+.audio-toggle-track { position:relative; width:42px; height:24px; border:1px solid #cab98f; border-radius:999px; background:#e1d8c5; transition:.16s; }
+.audio-toggle-track::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; box-shadow:0 1px 3px #26302659; transition:.16s; }
+.audio-toggle input:checked + .audio-toggle-track { border-color:#294737; background:var(--green); }
+.audio-toggle input:checked + .audio-toggle-track::after { transform:translateX(18px); }
+.audio-toggle input:focus-visible + .audio-toggle-track,.display-toggle:focus-visible,.verse-number:focus-visible,button:focus-visible { outline:3px solid rgba(54,90,71,.4); outline-offset:3px; }
+.display-toggle { min-width:84px; border:1px solid #cab98f; border-radius:999px; padding:9px 16px; color:var(--ink); background:#fffaf0; cursor:pointer; font:600 .8rem/1 Arial,sans-serif; }
+.display-toggle:hover,.display-toggle.active { border-color:var(--green); color:white; background:var(--green); }
+.recording-repair { min-width:auto; color:#8b3229; border-color:#c99b94; }
+.passage-card.rerecord-mode .word[data-group-id],.passage-card.rerecord-mode .word-space[data-group-id] { cursor:crosshair; outline:2px solid rgba(139,50,41,.25); outline-offset:1px; }
+.passage-card { position:relative; width:100%; padding:clamp(54px,8vw,88px) clamp(25px,7vw,80px) 50px; border:1px solid rgba(82,70,45,.22); border-radius:4px; background:rgba(255,253,247,.91); box-shadow:0 20px 55px rgba(72,57,31,.14),inset 0 0 55px rgba(183,133,53,.04); user-select:none; -webkit-user-select:none; }
+.passage-card::before,.passage-card::after { content:"◆"; position:absolute; top:18px; color:var(--gold); font-size:.65rem; }
+.passage-card::before { left:22px; } .passage-card::after { right:22px; }
+.verse-row { display:flex; align-items:baseline; gap:.35em; text-align:right; font-family:"Frank Ruhl Libre","Times New Roman",serif; font-size:clamp(1.7rem,4.1vw,2.85rem); line-height:1.9; }
+.verse-number { flex:0 0 auto; border:0; border-radius:999px; padding:.15em .4em; color:var(--gold); background:transparent; cursor:pointer; font:600 .52em/1 Arial,sans-serif; }
+.verse-number:hover,.verse-number.playing { color:white; background:var(--green); }
+.verse-line { min-width:0; unicode-bidi:isolate; }
+.word { border-radius:.12em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.word.highlight-1,.word-space.highlight-1 { color:#76500f; background:#f3d88e; }
+.word.highlight-2,.word-space.highlight-2 { color:#244b3a; background:#bcdac8; }
+.word[data-group-id],.word-space[data-group-id] { cursor:default; }
+.word.audio-active,.word-space.audio-active { color:#17251d; font-weight:700; }
+.status { min-height:1.3em; margin:22px 0 4px; color:var(--muted); font-style:italic; }
+.privacy { margin:0; color:var(--muted); font: .72rem/1.4 Arial,sans-serif; }
+.version { display:inline-block; margin:18px 0 0; border:1px solid rgba(82,70,45,.2); border-radius:999px; padding:6px 10px; color:var(--muted); background:rgba(255,253,247,.65); font:.72rem/1 Arial,sans-serif; letter-spacing:.08em; }
+dialog { width:min(520px,calc(100% - 32px)); border:1px solid #cab98f; border-radius:12px; padding:25px; color:var(--ink); background:var(--paper); box-shadow:0 22px 70px #2630264d; }
+dialog::backdrop { background:#26302666; backdrop-filter:blur(3px); }
+.dialog-label { margin:0; color:var(--gold); font:700 .72rem Arial,sans-serif; letter-spacing:.14em; text-transform:uppercase; }
+.dialog-phrase { margin:16px 0 24px; font:400 2rem/1.7 "Frank Ruhl Libre",serif; }
+.dialog-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; }
+.dialog-actions button { border:1px solid #cab98f; border-radius:999px; padding:10px 15px; color:var(--ink); background:#fffaf0; cursor:pointer; font:600 .78rem Arial,sans-serif; }
+.dialog-actions button:hover { border-color:var(--green); color:white; background:var(--green); }
+#record-button.recording { color:white; border-color:#a43f32; background:#a43f32; animation:pulse 1.1s infinite; }
+#delete-recording-button { color:#9a3c31; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+@keyframes pulse { 50% { transform:scale(.96); } }
+@media (max-width:560px) { .page{padding-top:38px}.page-header{margin-top:-38px;padding-top:28px}.verse-row{line-height:1.75}.passage-card{padding-left:18px;padding-right:18px} }
+@media (prefers-reduced-motion:reduce) { * { transition:none!important; animation:none!important; } }
