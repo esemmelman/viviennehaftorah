@@ -22,7 +22,7 @@ const SUPABASE_STORAGE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 const GROUP_TABLE = 'vivienne_haftorah_isaiah_49_14_17_highlight_groups_v1';
 const RECORDING_TABLE = 'vivienne_haftorah_isaiah_49_14_17_group_recordings_v1';
 const RECORDING_BUCKET = 'vivienne-haftorah-isaiah-49-14-17-group-recordings-v1';
-let groups = [];
+let groups = Object.freeze([]);
 const recordings = new Map();
 let remoteReady = false;
 let showTrope = true;
@@ -86,7 +86,13 @@ async function loadRemoteState() {
       fetch(`${SUPABASE_URL}/rest/v1/${RECORDING_TABLE}?select=highlight_group_id,object_path,mime_type,byte_size,updated_at`, { headers: apiHeaders() })
     ]);
     if (!groupResponse.ok || !recordingResponse.ok) throw new Error('Supabase load failed');
-    groups = (await groupResponse.json()).map(item => ({ id: item.id, verse: item.verse, start: item.start_word, end: item.end_word, color: item.color }));
+    groups = Object.freeze((await groupResponse.json()).map(item => Object.freeze({
+      id: item.id,
+      verse: item.verse,
+      start: item.start_word,
+      end: item.end_word,
+      color: item.color
+    })));
     recordings.clear(); (await recordingResponse.json()).forEach(item => recordings.set(item.highlight_group_id, item));
     remoteReady = true; render(); updateRecordingRepairControl();
     status.textContent = 'Hover over a highlighted phrase to hear it, or select a verse number.';
