@@ -6,7 +6,7 @@ Open `index.html`, or run `python -m http.server 8000` and visit `http://localho
 
 - Hebrew text with vowels and cantillation; the Trope button hides only cantillation.
 - Ten fixed phrases, divided at major cantillation breaks, with alternating highlights.
-- Hover over a recorded phrase to hear it. Select a verse number to play its recordings in order, with silence trimming and short pauses.
+- Hover over a recorded phrase to hear it. Select a verse number to play its recordings in order, with leading silence trimmed and no added pauses.
 - Use **Record missing audio** to record the next unfinished phrase. There are no Isaiah recordings initially; Brady's recordings are not reused.
 - Audio toggle, responsive layout, and recording quality settings match the source trainer.
 - Phrase groups are read-only, and recording deletion is disabled. As in the source, audio can be uploaded and replaced without sign-in.

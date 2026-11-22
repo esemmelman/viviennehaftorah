@@ -196,9 +196,11 @@ function stopVersePlayback(message = '') {
   if (!activeVersePlayback) return;
   activeVersePlayback.sources.forEach(source => { try { source.stop(); } catch {} });
   activeVersePlayback.timers.forEach(clearTimeout);
+  activeVersePlayback.finish?.();
   activeVersePlayback.button.classList.remove('playing');
   activeVersePlayback.button.textContent = activeVersePlayback.verse;
   activeVersePlayback = null;
+  passage.querySelectorAll('.audio-active').forEach(node => node.classList.remove('audio-active'));
   if (message) status.textContent = message;
 }
 
@@ -222,12 +224,9 @@ function speechBounds(buffer) {
   }
   const threshold = Math.max(.003, Math.max(...levels) * .035);
   const first = levels.findIndex(level => level >= threshold);
-  let last = levels.length - 1;
-  while (last >= 0 && levels[last] < threshold) last -= 1;
-  if (first < 0 || last < first) return { start: 0, duration: buffer.duration };
-  const start = Math.max(0, first * windowSize / buffer.sampleRate - .01);
-  const end = Math.min(buffer.duration, (last + 1) * windowSize / buffer.sampleRate + .02);
-  return { start, duration: Math.max(.08, end - start) };
+  if (first < 0) return { start: 0, duration: buffer.duration };
+  const start = Math.max(0, first * windowSize / buffer.sampleRate - .06);
+  return { start, duration: buffer.duration - start };
 }
 
 async function prepareVerseClip(group, context) {
@@ -237,43 +236,55 @@ async function prepareVerseClip(group, context) {
   return { group, buffer, ...speechBounds(buffer) };
 }
 
-async function playTrimmedVerse(queue, button, verse) {
-  stopAudio();
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!verseAudioContext) {
-    try { verseAudioContext = new AudioContextClass({ sampleRate: 48000 }); }
-    catch { verseAudioContext = new AudioContextClass(); }
+async function playRecordedVerse(button) {
+  const verse = Number(button.dataset.verse);
+  if (activeVersePlayback?.verse === verse) {
+    stopVersePlayback(`Verse ${verse} playback stopped.`);
+    return;
   }
-  await verseAudioContext.resume();
-  const token = Symbol('verse-playback');
-  activeVersePlayback = { token, button, verse, sources: [], timers: [] };
+  stopAudio();
+  hoveredGroupId = null;
+  const queue = groups.filter(group => group.verse === verse && recordings.has(group.id)).sort((a,b) => a.start - b.start);
+  if (!queue.length) {
+    status.textContent = `Verse ${verse} has no phrase recordings yet.`;
+    return;
+  }
+  const playback = { button, verse, sources: [], timers: [], finish: null };
+  activeVersePlayback = playback;
   button.classList.add('playing'); button.textContent = '■';
   status.textContent = `Preparing verse ${verse}…`;
-  const clips = await Promise.all(queue.filter(group => recordings.has(group.id)).map(group => prepareVerseClip(group, verseAudioContext)));
-  if (activeVersePlayback?.token !== token) return;
-  if (!clips.length) { stopVersePlayback(`Verse ${verse} has no phrase recordings yet.`); return; }
-  let startAt = verseAudioContext.currentTime + .06;
-  const finished = new Promise(resolve => {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!verseAudioContext) {
+      try { verseAudioContext = new AudioContextClass({ sampleRate: 48000 }); }
+      catch { verseAudioContext = new AudioContextClass(); }
+    }
+    await verseAudioContext.resume();
+    if (activeVersePlayback !== playback) return;
+    const clips = await Promise.all(queue.map(group => prepareVerseClip(group, verseAudioContext)));
+    if (activeVersePlayback !== playback) return;
+
+    let startAt = verseAudioContext.currentTime + .08;
+    const finished = new Promise(resolve => { playback.finish = resolve; });
     clips.forEach((clip, index) => {
       const source = verseAudioContext.createBufferSource();
       source.buffer = clip.buffer; source.connect(verseAudioContext.destination);
       source.start(startAt, clip.start, clip.duration);
-      activeVersePlayback.sources.push(source);
+      playback.sources.push(source);
       const delay = Math.max(0, (startAt - verseAudioContext.currentTime) * 1000);
-      activeVersePlayback.timers.push(setTimeout(() => {
-        if (activeVersePlayback?.token !== token) return;
+      playback.timers.push(setTimeout(() => {
+        if (activeVersePlayback !== playback) return;
         passage.querySelectorAll('.audio-active').forEach(node => node.classList.remove('audio-active'));
         passage.querySelectorAll(`[data-group-id="${clip.group.id}"]`).forEach(node => node.classList.add('audio-active'));
         status.textContent = `Playing verse ${verse}: phrase ${index + 1} of ${clips.length}.`;
       }, delay));
-      if (index === clips.length - 1) source.onended = resolve;
-      startAt += clip.duration + .075;
+      if (index === clips.length - 1) source.onended = playback.finish;
+      startAt += clip.duration;
     });
-  });
-  await finished;
-  if (activeVersePlayback?.token === token) {
-    stopVersePlayback(`Verse ${verse} complete.`);
-    passage.querySelectorAll('.audio-active').forEach(node => node.classList.remove('audio-active'));
+    await finished;
+    if (activeVersePlayback === playback) stopVersePlayback(`Verse ${verse} complete.`);
+  } catch {
+    if (activeVersePlayback === playback) stopVersePlayback(`A recording in verse ${verse} could not be played.`);
   }
 }
 playButton.addEventListener('click', () => selectedGroup && playGroup(selectedGroup));
@@ -309,7 +320,7 @@ passage.addEventListener('mouseout', event => {
   stopAudio();
 });
 
-passage.addEventListener('click', async event => {
+passage.addEventListener('click', event => {
   const phrase = event.target.closest('[data-group-id]');
   if (rerecordMode && phrase) {
     const groupId = Number(phrase.dataset.groupId);
@@ -319,12 +330,7 @@ passage.addEventListener('click', async event => {
     return;
   }
   const button = event.target.closest('.verse-number'); if (!button || !audioEnabled) return;
-  const verse = Number(button.dataset.verse);
-  if (activeVersePlayback?.verse === verse) { stopVersePlayback(`Verse ${verse} playback stopped.`); return; }
-  const queue = groups.filter(group => group.verse === verse).sort((a,b) => a.start - b.start);
-  if (!queue.length) { status.textContent = `Verse ${verse} has no phrase recordings yet.`; return; }
-  try { await playTrimmedVerse(queue, button, verse); }
-  catch (error) { stopVersePlayback(`A recording in verse ${verse} could not be played.`); }
+  playRecordedVerse(button);
 });
 
 tropeToggle.addEventListener('click', () => { stopAudio(); showTrope = !showTrope; tropeToggle.classList.toggle('active', showTrope); tropeToggle.setAttribute('aria-pressed', String(showTrope)); render(); if (selectedGroup) phraseNode.textContent = displayText(phraseFor(selectedGroup)); });
